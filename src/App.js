@@ -1,12 +1,16 @@
-import logo from './logo.svg';
 import './App.css';
+import Body from './components/Body/Body';
+import Header from './components/Header/Header';
+import { SearchHistoryProvider } from './contexts/SearchHistoryContext';
 
 function App() {
   return (
-    <div style={{ textAlign: "center", marginTop: "20%" }}>
-        <h1>🌦️ Weather App - Coming Soon</h1>
-        <p>We're working on something amazing. Stay tuned for real-time weather updates!</p>
-      </div>
+     <div className="App">
+         <SearchHistoryProvider>
+            <Header/>
+            <Body/>
+         </SearchHistoryProvider>
+     </div>
   );
 }
 
