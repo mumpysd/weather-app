@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography';
 import InputBase from '@mui/material/InputBase';
 import SearchIcon from '@mui/icons-material/Search';
 import { SearchHistoryContext, SearchHistoryProvider } from '../../contexts/SearchHistoryContext';
+import { baseApiUrl, apiKey } from "../../constants";
 
     
 const Search = styled('div')(({theme}) => ({
@@ -60,14 +61,31 @@ const Header = () => {
 
     const {addCity} = useContext(SearchHistoryContext);
     const [city, setCity] = useState("");
+    const [error, setError] = useState(null);
 
-    const handleSearch = (city) => {
-        if(city.trim() !== ""){ 
-            addCity(city);
+    const validateCity = async () => {
+        if(!city.trim()){
+            return;
+        }
+
+        setError(null);
+
+        try{
+            const response = await fetch(`${baseApiUrl}/data/2.5/weather?q=${city}&appid=${apiKey}`);
+            const data = await response.json();
+
+            if (data.cod === 200) {
+                addCity(city);
+            } else {
+                setError("❌ Invalid city name. Please try again.");
+            }
+
             setCity("");
         }
+        catch{
+            setError("⚠️ Error fetching data. Please check your API key.");
+        }
     }
-
 
     return(
         <Box sx={{ flexGrow: 1 }}>
@@ -88,12 +106,13 @@ const Header = () => {
                         <StyledInputBase
                         value={city}
                         onChange={(e) => setCity(e.target.value)} // Allows proper typing
-                        onBlur={() => handleSearch(city)} // ✅ Calls handleSearch when focus is lost
-                        onKeyDown={(e) => e.key === "Enter" && handleSearch(city)} // ✅ Calls on Enter key press
+                        onBlur={() => validateCity(city)} // ✅ Calls handleSearch when focus is lost
+                        onKeyDown={(e) => e.key === "Enter" && validateCity(city)} // ✅ Calls on Enter key press
                         placeholder="Search Location"
                         inputProps={{ 'aria-label': 'search' }}
                         />
                     </Search>
+                    {error && <p style={{ color: "red", marginTop: "14px" }}>{error}</p>}
                 </Toolbar>
             </HeaderAppBar>
         </Box>

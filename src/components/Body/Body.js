@@ -36,21 +36,42 @@ const MainContainer = styled('div')({
     minHeight: "40vh"
 })
 
+const emptyStyles = {
+    container: {
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      height: "70vh", // Full screen height
+      textAlign: "center",
+    },
+    text: {
+      fontSize: "20px",
+      fontWeight: "bold",
+      color: "#333",
+    },
+  };
+
 const Body = () => {
     const {searchHistory} = useContext(SearchHistoryContext);
 
     return(
        <BodyWrapper>
-            <TopNavBar>
-                {searchHistory.map((c, index) => (
-                    <TopNavBarItem key={index}>{c}</TopNavBarItem>
-                ))}
-            </TopNavBar>
-          
-            <MainContainer>
+            {searchHistory.length === 0 ? (
+                <div style={emptyStyles.container}>
+                    <h2 style={emptyStyles.text}>Enter a city name to verify and fetch weather details.</h2>
+                </div>
+            ) : (
+                <>
+                <TopNavBar>
+                    {searchHistory.map((c, index) => (
+                        <TopNavBarItem key={index}>{c}</TopNavBarItem>
+                    ))}
+                </TopNavBar>
             
-
-            </MainContainer>
+                <MainContainer></MainContainer>
+            </>
+               
+            )}
        </BodyWrapper>
     )
 }
