@@ -8,6 +8,7 @@ import InputBase from '@mui/material/InputBase';
 import SearchIcon from '@mui/icons-material/Search';
 import { SearchHistoryContext, SearchHistoryProvider } from '../../contexts/SearchHistoryContext';
 import { baseApiUrl, apiKey } from "../../constants";
+import { WeatherDataContext } from "../../contexts/WeatherDataContext";
 
     
 const Search = styled('div')(({theme}) => ({
@@ -60,8 +61,17 @@ const HeaderAppBar = styled(AppBar) ({
 const Header = () => {
 
     const {addCity} = useContext(SearchHistoryContext);
+
     const [city, setCity] = useState("");
     const [error, setError] = useState(null);
+
+    const context = useContext(WeatherDataContext);
+
+    if (!context) {
+      return <p>Loading...</p>; // ✅ Prevents undefined error
+    }
+  
+    const {storeWeatherData} = context;
 
     const validateCity = async () => {
         if(!city.trim()){
@@ -71,11 +81,51 @@ const Header = () => {
         setError(null);
 
         try{
-            const response = await fetch(`${baseApiUrl}/data/2.5/weather?q=${city}&appid=${apiKey}`);
-            const data = await response.json();
+            // 1️⃣ Fetch city details (state & country)
+            const geoRes = await fetch(`${baseApiUrl}/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`);
+            const geoData = await geoRes.json();
 
-            if (data.cod === 200) {
+            if(geoData.length === 0){
+                setError("❌ Invalid city name. Please try again.");
+                return;
+            }
+
+            const {name, state, country, lat, lon} = geoData[0];
+
+             // 2️⃣ Fetch weather using lat & lon
+            const weatherRes = await fetch(`${baseApiUrl}/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`);
+            const weatherData = await weatherRes.json();
+             // 3️⃣ Get Timezone Offset from API (in seconds)
+            const timezoneOffset = weatherData.timezone; 
+
+            // 4️⃣ Get Current UTC Time
+            const now = new Date();
+             // 5️⃣ Convert UTC Time to Local Time
+            const localTime = new Date(now.getTime() + timezoneOffset * 1000)
+            .toLocaleTimeString("en-US", { 
+                month: "numeric",
+                day: "numeric",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true
+            });
+
+
+            const combinedData = {
+                city: name,
+                state: state || "N/A",
+                country,
+                lat,
+                lon,
+                iconUrl: `http://openweathermap.org/img/wn/${weatherData.weather[0].icon}@2x.png`, // Formed icon URL
+                time: localTime,  // Final time formatted
+                ...weatherData, // Merging full weather API response
+            };
+
+            if (weatherData.cod === 200) {
                 addCity(city);
+                storeWeatherData(combinedData);
             } else {
                 setError("❌ Invalid city name. Please try again.");
             }

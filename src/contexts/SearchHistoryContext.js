@@ -4,7 +4,7 @@ export const SearchHistoryContext = createContext();
 
 const STORAGE_KEY = "searchHistory";
 const EXPIRY_KEY = "searchHistoryExpiry";
-const EXPIRY_DAYS = 1; // Store for 3 days
+const EXPIRY_DAYS = 1; // Store for 1 days
 
 export const SearchHistoryProvider = ({children}) => {
     const [searchHistory, setSearchHistory] = useState([]);
@@ -29,8 +29,8 @@ export const SearchHistoryProvider = ({children}) => {
     const addCity = (city) => {
         setSearchHistory((prev) => {
             const updatedHistory = [city, ...prev.filter((c) => c !== city)];
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedHistory.slice(0,3)));
-            localStorage.setItem(EXPIRY_KEY, (new Date().getTime() + EXPIRY_DAYS * 24 * 60 * 60 * 1000).toString());
+          //  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedHistory.slice(0,3)));
+           // localStorage.setItem(EXPIRY_KEY, (new Date().getTime() + EXPIRY_DAYS * 24 * 60 * 60 * 1000).toString());
             return updatedHistory.slice(0,3); // Keep only last 3 cities
        })
     }

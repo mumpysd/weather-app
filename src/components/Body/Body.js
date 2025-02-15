@@ -1,7 +1,8 @@
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import styled from "@emotion/styled/macro";
 import { SearchHistoryContext, SearchHistoryProvider } from "../../contexts/SearchHistoryContext";
 import { useContext } from "react";
+import { WeatherDataContext, WeatherDataProvider } from "../../contexts/WeatherDataContext";
 
 const BodyWrapper = styled(Box) ({
     padding: "10px",
@@ -53,7 +54,10 @@ const emptyStyles = {
 
 const Body = () => {
     const {searchHistory} = useContext(SearchHistoryContext);
+    const {weatherData} = useContext(WeatherDataContext);
 
+    console.log(weatherData);
+ 
     return(
        <BodyWrapper>
             {searchHistory.length === 0 ? (
@@ -68,7 +72,22 @@ const Body = () => {
                     ))}
                 </TopNavBar>
             
-                <MainContainer></MainContainer>
+                <WeatherDataProvider>
+                    <MainContainer>
+                        <Box sx={{
+                            padding: "20px 10px"
+                        }}>
+                           <Typography variant="h5">
+                                <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                                    <span>{weatherData.city},</span>
+                                    <span>{weatherData.state}</span>
+                                    <span>{weatherData.main.temp} °C</span><img src={weatherData.iconUrl} alt="Weather icon" width="40" height="40" />
+                                </Box>
+                            </Typography>
+                            <Typography>{weatherData.time}</Typography>
+                        </Box>
+                    </MainContainer>
+                </WeatherDataProvider>
             </>
                
             )}
