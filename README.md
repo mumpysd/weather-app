@@ -27,7 +27,7 @@ A simple and intuitive Weather App that provides real-time weather updates for a
    ```sh
    npm install
    ```
-3. Get an API key from [OpenWeather](https://openweathermap.org/api) (or any other weather API).
+3. Get an API key from [WeatherApi](https://www.weatherapi.com/) (or any other weather API).
 4. Create a `.env` file in the root and add:
    ```sh
    REACT_APP_WEATHER_API_KEY=your_api_key_here

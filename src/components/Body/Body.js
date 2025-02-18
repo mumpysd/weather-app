@@ -16,11 +16,11 @@ const TopNavBar = styled(Box) ({
     flexWrap: "wrap"
 })
 
-const TopNavBarItem = styled('div') ({
-    background: "#0a0a23",
+const TopNavBarItem = styled('div') (({isActive}) => ({
+    background: isActive ? "#1976d2" : "#0a0a23",
     width: "auto",
     height: "30px",
-    color: "#fff",
+    color: isActive ? "#fff" : "#fff",
     fontSize: "12px",
     marginRight: "0px",
     display: "flex",
@@ -32,7 +32,7 @@ const TopNavBarItem = styled('div') ({
     fontWeight: "bold",
     textTransform: "capitalize",
     cursor: "pointer"
-})
+}));
 
 const MainContainer = styled('div')({
     position: "relative",
@@ -59,60 +59,52 @@ const Body = () => {
     const {searchHistory} = useContext(SearchHistoryContext);
     const {weatherData, storeWeatherData} = useContext(WeatherDataContext);
 
-    console.log(weatherData);
-
-     const fetchWeatherData = async (city) => {
+    const fetchWeatherData = async (city) => {
             if(!city.trim()){
                 return;
             }
         
             try{
-                // 1️⃣ Fetch city details (state & country)
-                const geoRes = await fetch(`${baseApiUrl}/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`);
+                const geoRes = await fetch(`${baseApiUrl}/forecast.json?key=${apiKey}&q=${city}&days=1&aqi=yes&alerts=yes`);
                 const geoData = await geoRes.json();
     
                 if(geoData.length === 0){
                     return;
                 }
     
-                const {name, state, country, lat, lon} = geoData[0];
+                if(geoData?.location?.name.toLowerCase() !== city.toLowerCase()){
+                    return;
+                }
     
-                 // 2️⃣ Fetch weather using lat & lon
-                const weatherRes = await fetch(`${baseApiUrl}/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`);
-                const weatherData = await weatherRes.json();
-                 // 3️⃣ Get Timezone Offset from API (in seconds)
-                const timezoneOffset = weatherData.timezone; 
-    
-                // 4️⃣ Get Current UTC Time
-                const now = new Date();
-                 // 5️⃣ Convert UTC Time to Local Time
-                const localTime = new Date(now.getTime() + timezoneOffset * 1000)
-                .toLocaleTimeString("en-US", { 
-                    month: "numeric",
-                    day: "numeric",
+                const {name, region, country, lat, lon} = geoData['location'];
+                // Format date
+                const formattedDate = geoData.current.last_updated_epoch
+                ? new Intl.DateTimeFormat("en-US", {
+                    weekday: "long",
                     year: "numeric",
-                    hour: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
                     minute: "2-digit",
-                    hour12: true
-                });
+                    timeZone: geoData.location.tz_id,
+                  }).format(new Date(geoData.current.last_updated_epoch * 1000))
+                : "Date not available"; // Fallback text
     
     
                 const combinedData = {
                     city: name,
-                    state: state || "N/A",
+                    state: region || "N/A",
                     country,
                     lat,
                     lon,
-                    iconUrl: `http://openweathermap.org/img/wn/${weatherData.weather[0].icon}@2x.png`, // Formed icon URL
-                    time: localTime,  // Final time formatted
-                    ...weatherData, // Merging full weather API response
+                    time: formattedDate,  // Final time formatted
+                    ...geoData, // Merging full weather API response
                 };
     
-                if (weatherData.cod === 200) {
+                if(geoData?.location?.length !== 0){
                     storeWeatherData(combinedData);
-                } else {
-                }
-                }
+                } 
+              }
             catch{
             }
         }
@@ -125,30 +117,45 @@ const Body = () => {
                 </div>
             ) : (
                 <>
+                <WeatherDataProvider>
                 <TopNavBar>
                     {searchHistory.map((c, index) => (
                         <TopNavBarItem 
                             onClick={() => fetchWeatherData(c)}
+                            isActive={c.toLowerCase() === weatherData.city.toLowerCase()}
                             key={index}>{c}</TopNavBarItem>
                     ))}
                 </TopNavBar>
             
-                <WeatherDataProvider>
-                    <MainContainer>
-                        <Box sx={{
-                            padding: "20px 10px"
-                        }}>
-                           <Typography variant="h5">
-                                <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
-                                    <span>{weatherData.city},</span>
-                                    <span>{weatherData.state}</span>
-                                    <span>{weatherData.main.temp}°C</span><img SX={{background: "#0a0a23"}} src={weatherData.iconUrl} alt="Weather icon" width="60" height="60" />
-                                </Box>
-                            </Typography>
-                            <Typography>{weatherData.time}</Typography>
-                        </Box>
-                    </MainContainer>
+              
+                <MainContainer>
+                    <Box sx={{
+                        padding: "20px 10px"
+                    }}>
+                        <Typography 
+                            variant="h5"
+                            sx={{
+                                fontSize: {xs: "1rem", sm: "1.5rem"}
+                            }}>
+                            <Box 
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center" 
+                                gap={1}
+                               >
+                                <span>{weatherData.city},</span>
+                                <span>{weatherData.state}</span>
+                                <span>{weatherData?.current?.temp_c}°C</span><img sx={{background: "#0a0a23"}} src={`https:${weatherData.current.condition.icon}`} alt={weatherData.current.condition.text} width="60" height="60" />
+                            </Box>
+                        </Typography>
+                        <Typography
+                         sx={{
+                            fontSize: {xs: "0.8rem", sm: "1rem"}
+                        }}>{weatherData.time}</Typography>
+                    </Box>
+                </MainContainer>
                 </WeatherDataProvider>
+               
             </>
                
             )}

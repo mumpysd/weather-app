@@ -81,49 +81,40 @@ const Header = () => {
         setError(null);
 
         try{
-            // 1️⃣ Fetch city details (state & country)
-            const geoRes = await fetch(`${baseApiUrl}/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`);
+            const geoRes = await fetch(`${baseApiUrl}/forecast.json?key=${apiKey}&q=${city}&days=1&aqi=yes&alerts=yes`);
             const geoData = await geoRes.json();
-
-            if(geoData.length === 0){
-                setError("❌ Invalid city name. Please try again.");
+            
+            if(geoData?.location?.name.toLowerCase() !== city.toLowerCase()){
+                setError("City not found or mismatch!");
                 return;
             }
 
-            const {name, state, country, lat, lon} = geoData[0];
-
-             // 2️⃣ Fetch weather using lat & lon
-            const weatherRes = await fetch(`${baseApiUrl}/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`);
-            const weatherData = await weatherRes.json();
-             // 3️⃣ Get Timezone Offset from API (in seconds)
-            const timezoneOffset = weatherData.timezone; 
-
-            // 4️⃣ Get Current UTC Time
-            const now = new Date();
-             // 5️⃣ Convert UTC Time to Local Time
-            const localTime = new Date(now.getTime() + timezoneOffset * 1000)
-            .toLocaleTimeString("en-US", { 
-                month: "numeric",
-                day: "numeric",
+            const {name, region, country, lat, lon} = geoData['location'];
+            // Format date
+            const formattedDate = geoData.current.last_updated_epoch
+            ? new Intl.DateTimeFormat("en-US", {
+                weekday: "long",
                 year: "numeric",
-                hour: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
                 minute: "2-digit",
-                hour12: true
-            });
-
-
+                timeZone: geoData.location.tz_id,
+              }).format(new Date(geoData.current.last_updated_epoch * 1000))
+            : "Date not available"; // Fallback text
+          
+          
             const combinedData = {
                 city: name,
-                state: state || "N/A",
+                state: region || "N/A",
                 country,
                 lat,
                 lon,
-                iconUrl: `http://openweathermap.org/img/wn/${weatherData.weather[0].icon}@2x.png`, // Formed icon URL
-                time: localTime,  // Final time formatted
-                ...weatherData, // Merging full weather API response
+                time: formattedDate,  // Final time formatted
+                ...geoData, // Merging full weather API response
             };
 
-            if (weatherData.cod === 200) {
+            if(geoData['location'].length !== 0){
                 addCity(city);
                 storeWeatherData(combinedData);
             } else {
@@ -132,8 +123,8 @@ const Header = () => {
 
             setCity("");
         }
-        catch{
-            setError("⚠️ Error fetching data. Please check your API key.");
+        catch(err){
+            setError("Error fetching weather data:");
         }
     }
 
