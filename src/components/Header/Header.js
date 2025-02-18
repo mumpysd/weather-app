@@ -102,6 +102,17 @@ const Header = () => {
                 timeZone: geoData.location.tz_id,
               }).format(new Date(geoData.current.last_updated_epoch * 1000))
             : "Date not available"; // Fallback text
+
+             // Get current hour in 24-hour format
+            const currentHour = new Date().getHours();
+
+            // Filter the next 9 hours of data
+            const next9HoursData = geoData?.forecast?.forecastday[0].hour.filter(
+            (hour) => {
+                const hourTime = new Date(hour.time).getHours();
+                return hourTime >= currentHour && hourTime < currentHour + 9;
+            }
+            );
           
           
             const combinedData = {
@@ -110,6 +121,7 @@ const Header = () => {
                 country,
                 lat,
                 lon,
+                hoursData: next9HoursData,
                 time: formattedDate,  // Final time formatted
                 ...geoData, // Merging full weather API response
             };
