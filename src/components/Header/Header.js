@@ -7,8 +7,8 @@ import Typography from '@mui/material/Typography';
 import InputBase from '@mui/material/InputBase';
 import SearchIcon from '@mui/icons-material/Search';
 import { SearchHistoryContext, SearchHistoryProvider } from '../../contexts/SearchHistoryContext';
-import { baseApiUrl, apiKey } from "../../constants";
 import { WeatherDataContext } from "../../contexts/WeatherDataContext";
+import useWeather from "../../customHooks/useWeather";
 
     
 const Search = styled('div')(({theme}) => ({
@@ -59,119 +59,61 @@ const HeaderAppBar = styled(AppBar) ({
 
 
 const Header = () => {
-
-    const {addCity} = useContext(SearchHistoryContext);
-
-    const [city, setCity] = useState("");
-    const [error, setError] = useState(null);
-
-    const context = useContext(WeatherDataContext);
-
-    if (!context) {
-      return <p>Loading...</p>; // ✅ Prevents undefined error
-    }
+    const { addCity } = useContext(SearchHistoryContext);
+    const { fetchWeatherData, loading, error } = useWeather();
   
-    const {storeWeatherData} = context;
-
-    const validateCity = async () => {
-        if(!city.trim()){
-            return;
-        }
-
-        setError(null);
-
-        try{
-            const geoRes = await fetch(`${baseApiUrl}/forecast.json?key=${apiKey}&q=${city}&days=1&aqi=yes&alerts=yes`);
-            const geoData = await geoRes.json();
-            
-            if(geoData?.location?.name.toLowerCase() !== city.toLowerCase()){
-                setError("City not found or mismatch!");
-                return;
-            }
-
-            const {name, region, country, lat, lon} = geoData['location'];
-            // Format date
-            const formattedDate = geoData.current.last_updated_epoch
-            ? new Intl.DateTimeFormat("en-US", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                timeZone: geoData.location.tz_id,
-              }).format(new Date(geoData.current.last_updated_epoch * 1000))
-            : "Date not available"; // Fallback text
-
-             // Get current hour in 24-hour format
-            const currentHour = new Date().getHours();
-
-            // Filter the next 9 hours of data
-            const next9HoursData = geoData?.forecast?.forecastday[0].hour.filter(
-            (hour) => {
-                const hourTime = new Date(hour.time).getHours();
-                return hourTime >= currentHour && hourTime < currentHour + 9;
-            }
-            );
-          
-          
-            const combinedData = {
-                city: name,
-                state: region || "N/A",
-                country,
-                lat,
-                lon,
-                hoursData: next9HoursData,
-                time: formattedDate,  // Final time formatted
-                ...geoData, // Merging full weather API response
-            };
-
-            if(geoData['location'].length !== 0){
-                addCity(city);
-                storeWeatherData(combinedData);
-            } else {
-                setError("❌ Invalid city name. Please try again.");
-            }
-
-            setCity("");
-        }
-        catch(err){
-            setError("Error fetching weather data:");
-        }
-    }
-
-    return(
-        <Box sx={{ flexGrow: 1 }}>
-            <HeaderAppBar position="static">
-                <Toolbar>
-                <Typography
-                    variant="h6"
-                    noWrap
-                    component="div"
-                    sx={{ display: { xs: 'none', sm: 'block' } }}
-                >
-                    🌤 Weather App ☁️
-                </Typography>
-                    <Search>
-                        <SearchIconWrapper>
-                        <SearchIcon sx={{color: "#ccc", fontSize: "20px"}} />
-                        </SearchIconWrapper>
-                        <StyledInputBase
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)} // Allows proper typing
-                        onBlur={() => validateCity(city)} // ✅ Calls handleSearch when focus is lost
-                        onKeyDown={(e) => e.key === "Enter" && validateCity(city)} // ✅ Calls on Enter key press
-                        placeholder="Search Location"
-                        inputProps={{ 'aria-label': 'search' }}
-                        />
-                    </Search>
-                    {error && <p style={{ color: "red", marginTop: "14px" }}>{error}</p>}
-                </Toolbar>
-            </HeaderAppBar>
-        </Box>
-    )
-}
-
+    const [city, setCity] = useState("");
+    const [localError, setLocalError] = useState(null);
+  
+    const handleSearch = async () => {
+      if (!city.trim()) return;
+      
+      setLocalError(null);
+      
+      const success = await fetchWeatherData(city, 7);
+  
+      if (success) {
+        addCity(city); // Only add city if valid data is returned
+        setCity(""); // Clear input after search
+      } else {
+        setLocalError("❌ Invalid city name. Please try again.");
+      }
+    };
+  
+    return (
+      <Box sx={{ flexGrow: 1 }}>
+        <HeaderAppBar position="static">
+          <Toolbar>
+            <Typography
+              variant="h6"
+              noWrap
+              component="div"
+              sx={{ display: { xs: "none", sm: "block" } }}
+            >
+              🌤 Weather App ☁️
+            </Typography>
+            <Search>
+              <SearchIconWrapper>
+                <SearchIcon sx={{ color: "#ccc", fontSize: "20px" }} />
+              </SearchIconWrapper>
+              <StyledInputBase
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                onBlur={handleSearch} // ✅ Triggers validation when input loses focus
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()} // ✅ Triggers on Enter key press
+                placeholder="Search Location"
+                inputProps={{ "aria-label": "search" }}
+              />
+            </Search>
+            {loading && <p>Fetching weather data...</p>}
+            {(error || localError) && (
+              <p style={{ color: "red", marginTop: "14px" }}>{error || localError}</p>
+            )}
+          </Toolbar>
+        </HeaderAppBar>
+      </Box>
+    );
+  };
 export default Header;
 
   
