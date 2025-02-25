@@ -66,6 +66,21 @@ const emptyStyles = {
     return "Emergency conditions";
   };
 
+  const getRecommendations = (temperature) => {
+    let tempRecommendation = "";
+    
+    // Temperature-based recommendations
+    if (temperature < 15) {
+      tempRecommendation = "Wear warm clothes (jacket, gloves, scarf). Drink warm beverages. Use a humidifier indoors.";
+    } else if (temperature <= 30) {
+      tempRecommendation = "Comfortable weather for outdoor activities. Light clothing is recommended. Stay hydrated.";
+    } else {
+      tempRecommendation = "Avoid peak sun hours. Wear light, breathable clothes. Use sunscreen and stay hydrated.";
+    }
+  
+    return tempRecommendation;
+  }
+
   const Body = () => {
     const { searchHistory } = useContext(SearchHistoryContext);
     const { weatherData } = useContext(WeatherDataContext);
@@ -190,6 +205,17 @@ const emptyStyles = {
                                 </Typography>
                               </Box>
                             ))}
+                          </Box>
+
+                          
+                          <Box sx={{ padding: "30px 0px"}}>
+                            <Typography variant="h5" sx={{margin: "10px 0px"}}>
+                                Recommendations
+                            </Typography>
+
+                            <Typography variant="p" sx={{fontSize: "15px"}}>
+                               {getRecommendations(Math.round(weatherData?.current?.temp_c))}
+                            </Typography>
                           </Box>
                         </>
                       )}
