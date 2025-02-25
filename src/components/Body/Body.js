@@ -59,11 +59,11 @@ const emptyStyles = {
    // Map AQI index to category
    const getAqiCategory = (aqi) => {
     if (aqi <= 50) return "Good";
-    if (aqi <= 100) return "Moderate";
-    if (aqi <= 150) return "Unhealthy for Sensitive Groups";
-    if (aqi <= 200) return "Unhealthy";
-    if (aqi <= 300) return "Very Unhealthy";
-    return "Hazardous";
+    if (aqi <= 100) return "Acceptable air quality";
+    if (aqi <= 150) return "Unhealthy for sensitive groups";
+    if (aqi <= 200) return "Unhealthy for all";
+    if (aqi <= 300) return "Very unhealthy";
+    return "Emergency conditions";
   };
 
   const Body = () => {
@@ -72,8 +72,9 @@ const emptyStyles = {
     const { fetchWeatherData, loading, error } = useWeather();
 
     const airQuality = weatherData?.forecast?.forecastday[0]?.day?.air_quality;
-    const pm25 = airQuality["pm2_5"];
-  
+    const pm25 = airQuality?.["pm2_5"] || "";
+
+   
     return (
       <BodyWrapper>
         {searchHistory.length === 0 ? (
